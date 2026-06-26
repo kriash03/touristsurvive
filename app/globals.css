@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --border: #e2e8f0;
+    --primary: #4f8ef7;
+    --purple: #7c3aed;
+    --green: #16a34a;
+    --red: #dc2626;
+    --amber: #d97706;
+    --orange: #ea580c;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+  }
+
+  .dark {
+    --background: #0a0f1e;
+    --surface: #111827;
+    --surface-alt: #0d1433;
+    --border: #1e2a4e;
+    --primary: #4f8ef7;
+    --purple: #a78bfa;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --orange: #fb923c;
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --text-muted: #555555;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-alt) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -26,6 +26,9 @@ yarn-error.log*
 # internal docs — not for public repo
 docs/
 .agents/
+CLAUDE.md
+skills-lock.json
+touristsurvive_prd.md
 
 # IDE
 .vscode/
