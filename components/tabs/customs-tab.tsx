@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { CheckCircle, XCircle, Tote, Money, Eye, Warning } from '@phosphor-icons/react'
 import { useGuideStore } from '@/store/guide-store'
 import { ErrorBanner } from '@/components/error-banner'
+import { fetchTab } from '@/lib/fetch-tab'
 import type { CustomsData } from '@/lib/types'
 
 function SectionHeader({ icon, label, color }: { icon: React.ReactNode; label: string; color: string }) {
@@ -25,17 +26,9 @@ export function CustomsTab() {
   useEffect(() => {
     if (tabState.status !== 'idle') return
     setTabLoading('customs')
-    fetch('/api/guide/customs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ country }),
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) throw new Error(json.error)
-        setTabData('customs', json)
-      })
-      .catch((e) => setTabError('customs', e.message ?? 'Something went wrong'))
+    fetchTab('customs', country)
+      .then((data) => setTabData('customs', data as CustomsData))
+      .catch((e: Error) => setTabError('customs', e.message))
   }, [country, tabState.status, setTabLoading, setTabData, setTabError])
 
   if (tabState.status === 'loading') return null

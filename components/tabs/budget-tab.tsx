@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { Bank, ChartBar, CurrencyDollar, Warning, HandCoins, MaskHappy } from '@phosphor-icons/react'
 import { useGuideStore } from '@/store/guide-store'
 import { ErrorBanner } from '@/components/error-banner'
+import { fetchTab } from '@/lib/fetch-tab'
 import type { BudgetData } from '@/lib/types'
 
 const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -31,17 +32,9 @@ export function BudgetTab() {
   useEffect(() => {
     if (tabState.status !== 'idle') return
     setTabLoading('budget')
-    fetch('/api/guide/budget', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ country }),
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) throw new Error(json.error)
-        setTabData('budget', json)
-      })
-      .catch((e) => setTabError('budget', e.message ?? 'Something went wrong'))
+    fetchTab('budget', country)
+      .then((data) => setTabData('budget', data as BudgetData))
+      .catch((e: Error) => setTabError('budget', e.message))
   }, [country, tabState.status, setTabLoading, setTabData, setTabError])
 
   if (tabState.status === 'loading') return null

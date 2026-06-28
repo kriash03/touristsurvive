@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { TabKey, TabData } from '@/lib/types'
 
 interface TabState {
@@ -22,33 +23,57 @@ interface GuideStore {
   setTabError: (tab: TabKey, error: string) => void
 }
 
-export const useGuideStore = create<GuideStore>((set) => ({
-  country: '',
-  activeTab: 'language',
-  tabs: {
-    language: initialTabState(),
-    customs: initialTabState(),
-    budget: initialTabState(),
-    food: initialTabState(),
-  },
-
-  setCountry: (country) =>
-    set({
-      country,
+export const useGuideStore = create<GuideStore>()(
+  persist(
+    (set) => ({
+      country: '',
       activeTab: 'language',
-      tabs: Object.fromEntries(
-        ALL_TABS.map((t) => [t, initialTabState()])
-      ) as Record<TabKey, TabState>,
+      tabs: {
+        language: initialTabState(),
+        customs: initialTabState(),
+        budget: initialTabState(),
+        food: initialTabState(),
+      },
+
+      setCountry: (country) =>
+        set({
+          country,
+          activeTab: 'language',
+          tabs: Object.fromEntries(
+            ALL_TABS.map((t) => [t, initialTabState()])
+          ) as Record<TabKey, TabState>,
+        }),
+
+      setActiveTab: (tab) => set({ activeTab: tab }),
+
+      setTabLoading: (tab) =>
+        set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'loading', data: null } } })),
+
+      setTabData: (tab, data) =>
+        set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'success', data } } })),
+
+      setTabError: (tab, error) =>
+        set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'error', data: null, error } } })),
     }),
-
-  setActiveTab: (tab) => set({ activeTab: tab }),
-
-  setTabLoading: (tab) =>
-    set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'loading', data: null } } })),
-
-  setTabData: (tab, data) =>
-    set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'success', data } } })),
-
-  setTabError: (tab, error) =>
-    set((s) => ({ tabs: { ...s.tabs, [tab]: { status: 'error', data: null, error } } })),
-}))
+    {
+      name: 'tourist-survive-guide',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        country: state.country,
+        activeTab: state.activeTab,
+        tabs: state.tabs,
+      }),
+      // Rehydrated tabs with status 'loading' are reset to idle (page reload mid-fetch)
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        const fixed = { ...state.tabs }
+        for (const key of ALL_TABS) {
+          if (fixed[key].status === 'loading') {
+            fixed[key] = initialTabState()
+          }
+        }
+        state.tabs = fixed
+      },
+    }
+  )
+)

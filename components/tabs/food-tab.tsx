@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { ForkKnife, Handshake, ChatText, Leaf, ShoppingCart, Warning } from '@phosphor-icons/react'
 import { useGuideStore } from '@/store/guide-store'
 import { ErrorBanner } from '@/components/error-banner'
+import { fetchTab } from '@/lib/fetch-tab'
 import type { FoodData } from '@/lib/types'
 
 const DIFFICULTY_COLORS: Record<string, { text: string; bg: string }> = {
@@ -31,17 +32,9 @@ export function FoodTab() {
   useEffect(() => {
     if (tabState.status !== 'idle') return
     setTabLoading('food')
-    fetch('/api/guide/food', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ country }),
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) throw new Error(json.error)
-        setTabData('food', json)
-      })
-      .catch((e) => setTabError('food', e.message ?? 'Something went wrong'))
+    fetchTab('food', country)
+      .then((data) => setTabData('food', data as FoodData))
+      .catch((e: Error) => setTabError('food', e.message))
   }, [country, tabState.status, setTabLoading, setTabData, setTabError])
 
   if (tabState.status === 'loading') return null

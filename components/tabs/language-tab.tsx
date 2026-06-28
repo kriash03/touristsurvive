@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, SpeakerHigh } from '@phosphor-icons/react'
 import { useGuideStore } from '@/store/guide-store'
 import { ErrorBanner } from '@/components/error-banner'
+import { fetchTab } from '@/lib/fetch-tab'
 import type { LanguageData } from '@/lib/types'
 
 type SubTab = 'situations' | 'numbers' | 'greetings' | 'shopqa' | 'flashcards'
@@ -23,10 +24,32 @@ const SITUATION_LABELS: Record<string, string> = {
   transport: 'Transport',
 }
 
+function speak(text: string) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  window.speechSynthesis.cancel()
+  const utt = new SpeechSynthesisUtterance(text)
+  window.speechSynthesis.speak(utt)
+}
+
+function SpeakButton({ text }: { text: string }) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); speak(text) }}
+      aria-label="Pronounce phrase"
+      className="ml-auto shrink-0 rounded-full p-1.5 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--primary)] outline-none"
+    >
+      <SpeakerHigh size={14} weight="fill" />
+    </button>
+  )
+}
+
 function PhraseCard({ phrase }: { phrase: LanguageData['situations']['restaurant'][number] }) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-1">
-      <p className="text-lg font-bold text-[var(--text-primary)]">{phrase.local}</p>
+      <div className="flex items-start gap-2">
+        <p className="text-lg font-bold text-[var(--text-primary)] flex-1">{phrase.local}</p>
+        <SpeakButton text={phrase.local} />
+      </div>
       <p className="text-sm text-[var(--primary)]">{phrase.romanized}</p>
       <p className="text-xs text-[var(--text-muted)] italic">{phrase.pronunciation}</p>
       <p className="text-sm text-[var(--text-secondary)] mt-1">{phrase.meaning}</p>
@@ -53,27 +76,16 @@ export function LanguageTab() {
   useEffect(() => {
     if (tabState.status !== 'idle') return
     setTabLoading('language')
-    fetch('/api/guide/language', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ country }),
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) throw new Error(json.error)
-        setTabData('language', json)
-      })
-      .catch((e) => setTabError('language', e.message ?? 'Something went wrong'))
+    fetchTab('language', country)
+      .then((data) => setTabData('language', data as LanguageData))
+      .catch((e: Error) => setTabError('language', e.message))
   }, [country, tabState.status, setTabLoading, setTabData, setTabError])
+
+  const retry = useCallback(() => setTabError('language', ''), [setTabError])
 
   if (tabState.status === 'loading') return null
   if (tabState.status === 'error') {
-    return (
-      <ErrorBanner
-        message={tabState.error ?? 'Failed to load language guide'}
-        onRetry={() => setTabError('language', '')}
-      />
-    )
+    return <ErrorBanner message={tabState.error ?? 'Failed to load language guide'} onRetry={retry} />
   }
   if (tabState.status !== 'success' || !tabState.data) return null
 
@@ -137,7 +149,10 @@ export function LanguageTab() {
               key={i}
               className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 space-y-0.5"
             >
-              <p className="text-2xl font-bold text-[var(--primary)]">{n.numeral}</p>
+              <div className="flex items-center gap-1">
+                <p className="text-2xl font-bold text-[var(--primary)] flex-1">{n.numeral}</p>
+                <SpeakButton text={n.local} />
+              </div>
               <p className="text-sm text-[var(--text-primary)]">{n.local}</p>
               <p className="text-xs text-[var(--text-muted)] italic">{n.pronunciation}</p>
             </div>
@@ -155,7 +170,10 @@ export function LanguageTab() {
               <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">
                 {g.context}
               </p>
-              <p className="text-lg font-bold text-[var(--text-primary)]">{g.phrase}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-lg font-bold text-[var(--text-primary)] flex-1">{g.phrase}</p>
+                <SpeakButton text={g.phrase} />
+              </div>
               <p className="text-xs text-[var(--text-muted)] italic">{g.pronunciation}</p>
               {g.note && <p className="text-xs text-[var(--amber)]">{g.note}</p>}
             </div>
@@ -170,14 +188,13 @@ export function LanguageTab() {
               key={i}
               className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-1"
             >
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">
-                Q
-              </p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Q</p>
               <p className="text-sm text-[var(--text-primary)]">{qa.question}</p>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-2">
-                A
-              </p>
-              <p className="text-sm font-bold text-[var(--primary)]">{qa.answer}</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-2">A</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-[var(--primary)] flex-1">{qa.answer}</p>
+                <SpeakButton text={qa.answer} />
+              </div>
               <p className="text-xs text-[var(--text-muted)] italic">{qa.pronunciation}</p>
             </div>
           ))}
@@ -206,6 +223,17 @@ export function LanguageTab() {
               {flipped ? 'Tap to see English' : 'Tap to reveal'}
             </p>
           </button>
+          {flipped && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => speak(flashcard.local)}
+                className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-alt)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
+              >
+                <SpeakerHigh size={14} weight="fill" />
+                Hear pronunciation
+              </button>
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => { setCardIndex((i) => Math.max(0, i - 1)); setFlipped(false) }}
