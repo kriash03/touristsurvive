@@ -1,6 +1,6 @@
 'use client'
 
-import { lazy, Suspense, useId } from 'react'
+import { lazy, Suspense, useId, useState, useEffect } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useGuideStore } from '@/store/guide-store'
 import type { TabKey } from '@/lib/types'
@@ -50,8 +50,13 @@ export function GuideShell() {
   const setActiveTab = useGuideStore((s) => s.setActiveTab)
   const shouldReduce = useReducedMotion()
   const tablistId = useId()
+  const [mounted, setMounted] = useState(false)
 
-  if (!country) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || !country) return null
 
   return (
     <section id="guide-shell" className="space-y-4">

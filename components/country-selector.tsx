@@ -14,7 +14,14 @@ export function CountrySelector() {
   const [showDropdown, setShowDropdown] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const listboxId = 'country-suggestions'
+  const country = useGuideStore((s) => s.country)
   const setCountry = useGuideStore((s) => s.setCountry)
+
+  useEffect(() => {
+    if (country) {
+      setInput(country)
+    }
+  }, [country])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

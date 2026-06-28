@@ -57,7 +57,11 @@ export const useGuideStore = create<GuideStore>()(
     }),
     {
       name: 'tourist-survive-guide',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => typeof window !== 'undefined' ? localStorage : {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      } as unknown as Storage),
       partialize: (state) => ({
         country: state.country,
         activeTab: state.activeTab,
