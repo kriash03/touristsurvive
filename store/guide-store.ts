@@ -10,7 +10,7 @@ interface TabState {
 
 const initialTabState = (): TabState => ({ status: 'idle', data: null })
 
-const ALL_TABS: TabKey[] = ['language', 'customs', 'budget', 'food']
+const ALL_TABS: TabKey[] = ['language', 'customs', 'budget', 'food', 'learn']
 
 interface GuideStore {
   country: string
@@ -33,6 +33,7 @@ export const useGuideStore = create<GuideStore>()(
         customs: initialTabState(),
         budget: initialTabState(),
         food: initialTabState(),
+        learn: initialTabState(),
       },
 
       setCountry: (country) =>

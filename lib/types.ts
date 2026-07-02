@@ -47,6 +47,17 @@ export interface FoodData {
   avoid: { item: string; reason: string }[]
 }
 
-export type TabKey = 'language' | 'customs' | 'budget' | 'food'
+export interface LearnTip {
+  category: 'Slang' | 'Verbs' | 'Nouns' | 'Etiquette' | 'Sentences' | 'Numbers'
+  headline: string
+  detail: string
+  examples: string[]
+  pronunciation?: string
+}
 
-export type TabData = LanguageData | CustomsData | BudgetData | FoodData
+export interface LearnResponse {
+  tips: LearnTip[]
+}
+
+export type TabKey = 'language' | 'customs' | 'budget' | 'food' | 'learn'
+export type TabData = LanguageData | CustomsData | BudgetData | FoodData | LearnResponse
