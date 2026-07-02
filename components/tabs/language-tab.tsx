@@ -6,6 +6,7 @@ import { CaretLeft, CaretRight, SpeakerHigh } from '@phosphor-icons/react'
 import { useGuideStore } from '@/store/guide-store'
 import { ErrorBanner } from '@/components/error-banner'
 import { fetchTab } from '@/lib/fetch-tab'
+import { getLocaleForCountry, resolveVoice, speak } from '@/lib/tts-locale'
 import type { LanguageData } from '@/lib/types'
 
 type SubTab = 'situations' | 'numbers' | 'greetings' | 'shopqa' | 'flashcards'
@@ -24,31 +25,44 @@ const SITUATION_LABELS: Record<string, string> = {
   transport: 'Transport',
 }
 
-function speak(text: string) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
-  window.speechSynthesis.cancel()
-  const utt = new SpeechSynthesisUtterance(text)
-  window.speechSynthesis.speak(utt)
-}
+function SpeakButton({ text, locale, showNoVoice }: { text: string; locale: string; showNoVoice?: boolean }) {
+  const [noVoice, setNoVoice] = useState(false)
 
-function SpeakButton({ text }: { text: string }) {
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    const check = () => {
+      const voice = resolveVoice(locale)
+      setNoVoice(!voice && locale !== 'en-US')
+    }
+    check()
+    window.speechSynthesis.addEventListener('voiceschanged', check)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', check)
+  }, [locale])
+
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); speak(text) }}
-      aria-label="Pronounce phrase"
-      className="ml-auto shrink-0 rounded-full p-1.5 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--primary)] outline-none"
-    >
-      <SpeakerHigh size={14} weight="fill" />
-    </button>
+    <span className="relative inline-flex flex-col items-center">
+      <button
+        onClick={(e) => { e.stopPropagation(); speak(text, locale) }}
+        aria-label="Pronounce phrase"
+        className="ml-auto shrink-0 rounded-full p-1.5 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--primary)] outline-none"
+      >
+        <SpeakerHigh size={14} weight="fill" />
+      </button>
+      {showNoVoice && noVoice && (
+        <span className="absolute top-full mt-1 whitespace-nowrap text-[10px] text-[var(--text-muted)] bg-[var(--surface)] border border-[var(--border)] rounded px-1.5 py-0.5 z-10">
+          No voice available on this device
+        </span>
+      )}
+    </span>
   )
 }
 
-function PhraseCard({ phrase }: { phrase: LanguageData['situations']['restaurant'][number] }) {
+function PhraseCard({ phrase, locale }: { phrase: LanguageData['situations']['restaurant'][number]; locale: string }) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-1">
       <div className="flex items-start gap-2">
         <p className="text-lg font-bold text-[var(--text-primary)] flex-1">{phrase.local}</p>
-        <SpeakButton text={phrase.local} />
+        <SpeakButton text={phrase.local} locale={locale} showNoVoice />
       </div>
       <p className="text-sm text-[var(--primary)]">{phrase.romanized}</p>
       <p className="text-xs text-[var(--text-muted)] italic">{phrase.pronunciation}</p>
@@ -67,6 +81,7 @@ export function LanguageTab() {
   const setTabData = useGuideStore((s) => s.setTabData)
   const setTabError = useGuideStore((s) => s.setTabError)
   const shouldReduce = useReducedMotion()
+  const locale = getLocaleForCountry(country)
 
   const [subTab, setSubTab] = useState<SubTab>('situations')
   const [situation, setSituation] = useState<'restaurant' | 'shopping' | 'transport'>('restaurant')
@@ -135,7 +150,7 @@ export function LanguageTab() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <PhraseCard phrase={phrase} />
+                <PhraseCard phrase={phrase} locale={locale} />
               </motion.div>
             ))}
           </div>
@@ -151,7 +166,7 @@ export function LanguageTab() {
             >
               <div className="flex items-center gap-1">
                 <p className="text-2xl font-bold text-[var(--primary)] flex-1">{n.numeral}</p>
-                <SpeakButton text={n.local} />
+                <SpeakButton text={n.local} locale={locale} showNoVoice />
               </div>
               <p className="text-sm text-[var(--text-primary)]">{n.local}</p>
               <p className="text-xs text-[var(--text-muted)] italic">{n.pronunciation}</p>
@@ -172,7 +187,7 @@ export function LanguageTab() {
               </p>
               <div className="flex items-start gap-2">
                 <p className="text-lg font-bold text-[var(--text-primary)] flex-1">{g.phrase}</p>
-                <SpeakButton text={g.phrase} />
+                <SpeakButton text={g.phrase} locale={locale} showNoVoice />
               </div>
               <p className="text-xs text-[var(--text-muted)] italic">{g.pronunciation}</p>
               {g.note && <p className="text-xs text-[var(--amber)]">{g.note}</p>}
@@ -193,7 +208,7 @@ export function LanguageTab() {
               <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-2">A</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-bold text-[var(--primary)] flex-1">{qa.answer}</p>
-                <SpeakButton text={qa.answer} />
+                <SpeakButton text={qa.answer} locale={locale} showNoVoice />
               </div>
               <p className="text-xs text-[var(--text-muted)] italic">{qa.pronunciation}</p>
             </div>
@@ -226,7 +241,7 @@ export function LanguageTab() {
           {flipped && (
             <div className="flex justify-center">
               <button
-                onClick={() => speak(flashcard.local)}
+                onClick={() => speak(flashcard.local, locale)}
                 className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-alt)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
               >
                 <SpeakerHigh size={14} weight="fill" />
