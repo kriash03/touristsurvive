@@ -115,7 +115,10 @@ export function LearnTab() {
 
   useEffect(() => {
     if (tabState.status === 'idle') load()
-  }, [country])
+    // load is intentionally excluded — it's recreated each render and would cause infinite loops;
+    // country is the true trigger for re-fetching
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [country, tabState.status])
 
   if (tabState.status === 'idle' || tabState.status === 'loading') {
     return <LearnSkeleton />
